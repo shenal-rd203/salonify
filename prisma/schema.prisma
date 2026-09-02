@@ -1,0 +1,167 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// -----------------------------------------------------------------------------
+// Enums
+// -----------------------------------------------------------------------------
+
+enum SubscriptionTier {
+  QUEUE_ONLY
+  HYBRID_PREMIUM
+
+  @@map("subscription_tier")
+}
+
+enum AppointmentStatus {
+  BOOKED
+  IN_CHAIR
+  COMPLETED
+  NO_SHOW
+  CANCELLED
+
+  @@map("appointment_status")
+}
+
+enum QueueStatus {
+  WAITING
+  IN_CHAIR
+  COMPLETED
+  NO_SHOW
+  LEFT_LINE
+
+  @@map("queue_status")
+}
+
+// -----------------------------------------------------------------------------
+// 1. Core Entities (The Foundation)
+// -----------------------------------------------------------------------------
+
+model Shop {
+  id               String           @id @default(uuid()) @db.Uuid
+  name             String
+  subscriptionTier SubscriptionTier @default(QUEUE_ONLY) @map("subscription_tier")
+  whatsappNumber   String           @map("whatsapp_number")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  barbers      Barber[]
+  services     Service[]
+  appointments Appointment[]
+  walkIns      WalkInQueue[]
+
+  @@map("shops")
+}
+
+model Barber {
+  id        String   @id @default(uuid()) @db.Uuid
+  shopId    String   @map("shop_id") @db.Uuid
+  name      String
+  isActive  Boolean  @default(false) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  shop         Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  walkIns      WalkInQueue[]
+
+  @@index([shopId])
+  @@index([shopId, isActive])
+  @@map("barbers")
+}
+
+model Customer {
+  id            String   @id @default(uuid()) @db.Uuid
+  phoneNumber   String   @unique @map("phone_number")
+  name          String
+  noShowStrikes Int      @default(0) @map("no_show_strikes")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  appointments Appointment[]
+  walkIns      WalkInQueue[]
+
+  @@map("customers")
+}
+
+model Service {
+  id           String   @id @default(uuid()) @db.Uuid
+  shopId       String   @map("shop_id") @db.Uuid
+  name         String
+  durationMins Int      @map("duration_mins")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId])
+  @@map("services")
+}
+
+// -----------------------------------------------------------------------------
+// 2. Transactional Entities (The Engine)
+// -----------------------------------------------------------------------------
+
+/// The "Solid Block" Table
+/// Strictly handles future, fixed-time appointments.
+model Appointment {
+  id             String            @id @default(uuid()) @db.Uuid
+  shopId         String            @map("shop_id") @db.Uuid
+  barberId       String            @map("barber_id") @db.Uuid
+  customerId     String            @map("customer_id") @db.Uuid
+  serviceIds     String[]          @map("service_ids") @db.Uuid
+  scheduledStart DateTime          @map("scheduled_start")
+  scheduledEnd   DateTime          @map("scheduled_end")
+  status         AppointmentStatus @default(BOOKED)
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  shop     Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  barber   Barber   @relation(fields: [barberId], references: [id], onDelete: Restrict)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@index([shopId, scheduledStart])
+  @@index([barberId, scheduledStart])
+  @@index([customerId])
+  @@index([shopId, status])
+  @@map("appointments")
+}
+
+/// The "Liquid Block" Table
+/// Real-time walk-in queue without rigid start times; ordered by joined_at & status.
+model WalkInQueue {
+  id               String      @id @default(uuid()) @db.Uuid
+  shopId           String      @map("shop_id") @db.Uuid
+  barberId         String?     @map("barber_id") @db.Uuid
+  customerId       String      @map("customer_id") @db.Uuid
+  serviceIds       String[]    @map("service_ids") @db.Uuid
+  joinedAt         DateTime    @default(now()) @map("joined_at")
+  totalEstDuration Int         @map("total_est_duration")
+  status           QueueStatus @default(WAITING)
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  shop     Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  barber   Barber?  @relation(fields: [barberId], references: [id], onDelete: SetNull)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@index([shopId, status, joinedAt])
+  @@index([barberId, status])
+  @@index([customerId])
+  @@map("walk_in_queues")
+}
