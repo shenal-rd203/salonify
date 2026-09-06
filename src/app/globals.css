@@ -1,69 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --color-surface-0: #0a0a0a;
-  --color-surface-1: #171717;
-  --color-surface-2: #262626;
-  --color-surface-3: #404040;
-  
-  --color-accent: #f59e0b; /* Amber/Gold */
-  --color-accent-hover: #d97706;
-  
-  --color-waiting: #f59e0b;
-  --color-in-chair: #10b981; /* Emerald */
-  --color-done: #737373; /* Neutral gray */
-  --color-cancelled: #ef4444; /* Red */
-  
-  --color-foreground: #ededed;
-  --color-foreground-muted: #a3a3a3;
+  --background: #ffffff;
+  --foreground: #171717;
 }
 
 @theme inline {
-  --color-surface-0: var(--color-surface-0);
-  --color-surface-1: var(--color-surface-1);
-  --color-surface-2: var(--color-surface-2);
-  --color-surface-3: var(--color-surface-3);
-  
-  --color-accent: var(--color-accent);
-  --color-accent-hover: var(--color-accent-hover);
-  
-  --color-waiting: var(--color-waiting);
-  --color-in-chair: var(--color-in-chair);
-  --color-done: var(--color-done);
-  --color-cancelled: var(--color-cancelled);
-  
-  --color-foreground: var(--color-foreground);
-  --color-foreground-muted: var(--color-foreground-muted);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
 }
 
 body {
-  background-color: var(--color-surface-0);
-  color: var(--color-foreground);
-  font-family: var(--font-inter), sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* Utilities for glassmorphism and pulsing dots */
-.glass-panel {
-  background-color: rgba(23, 23, 23, 0.7);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-@keyframes pulse-ring {
-  0% { transform: scale(0.8); opacity: 0.5; }
-  100% { transform: scale(2.5); opacity: 0; }
-}
-
-.animate-pulse-ring::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background-color: inherit;
-  border-radius: 50%;
-  z-index: -1;
-  animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
 }
