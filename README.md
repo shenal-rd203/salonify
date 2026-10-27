@@ -132,7 +132,7 @@ natural next product surfaces.
 
 ## Why this project
 
-Salonify is a portfolio project built around a real operational workflow rather
+Salonify is a project built around a real operational workflow rather
 than a generic CRUD demo. It shows how to translate business constraints into
 testable domain logic, expose a focused API, model relational data, and make
 time-based behavior explicit and reliable.
